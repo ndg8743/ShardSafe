@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "p2p-storage",
+  "productName": "shardsafe",
   "version": "0.1.0",
-  "identifier": "com.root.p2p-storage",
+  "identifier": "com.root.shardsafe",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "p2p-storage",
+        "title": "shardsafe",
         "width": 800,
         "height": 600
       }

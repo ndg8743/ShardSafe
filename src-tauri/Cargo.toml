@@ -1,12 +1,12 @@
 [package]
-name = "p2p-storage"
+name = "shardsafe"
 version = "0.1.0"
 description = "Zero-Trust P2P Distributed Storage System"
 authors = ["Nathan G <ndg8743@gmail.com>"]
 edition = "2021"
 
 [lib]
-name = "p2p_storage_lib"
+name = "shardsafe_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -65,6 +65,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 hex = "0.4"
 base64 = "0.22"
 dirs = "5.0"
+async-trait = "0.1.89"
 
 [dev-dependencies]
 tempfile = "3.24.0"

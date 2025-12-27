@@ -9,7 +9,7 @@ use tauri::Manager;
 use tokio::sync::Mutex;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use p2p_storage_lib::storage::ChunkStore;
+use shardsafe_lib::storage::ChunkStore;
 
 /// Application state shared across commands
 pub struct AppState {
@@ -53,8 +53,8 @@ async fn upload_file(
     file_path: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
-    use p2p_storage_lib::crypto::{ChunkId, MasterKey};
-    use p2p_storage_lib::files::{chunk_data, encode, ErasureConfig, FileManifest, DEFAULT_CHUNK_SIZE};
+    use shardsafe_lib::crypto::{ChunkId, MasterKey};
+    use shardsafe_lib::files::{chunk_data, encode, ErasureConfig, FileManifest, DEFAULT_CHUNK_SIZE};
 
     // Get passphrase
     let passphrase = {
@@ -98,7 +98,7 @@ async fn upload_file(
         let chunk_key = master_key.derive_chunk_key(&manifest.file_id, chunk.index);
 
         // Encrypt chunk
-        let encrypted = p2p_storage_lib::crypto::encrypt(&chunk_key, &chunk.data)
+        let encrypted = shardsafe_lib::crypto::encrypt(&chunk_key, &chunk.data)
             .map_err(|e| format!("Encryption failed: {:?}", e))?;
 
         // Erasure encode
@@ -116,7 +116,7 @@ async fn upload_file(
                 .store(&shard_id, shard_data)
                 .map_err(|e| format!("Storage failed: {:?}", e))?;
 
-            shard_locations.push(p2p_storage_lib::files::ShardLocation {
+            shard_locations.push(shardsafe_lib::files::ShardLocation {
                 shard_index: shard_idx,
                 shard_id,
                 peer_ids: vec!["local".to_string()],
@@ -124,7 +124,7 @@ async fn upload_file(
         }
 
         // Add chunk info to manifest
-        manifest.add_chunk(p2p_storage_lib::files::ChunkInfo {
+        manifest.add_chunk(shardsafe_lib::files::ChunkInfo {
             index: chunk.index,
             chunk_id: ChunkId::from_data(&encrypted),
             encrypted_size: encrypted.len(),
