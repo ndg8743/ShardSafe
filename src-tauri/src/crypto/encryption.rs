@@ -1,4 +1,8 @@
-//! Authenticated encryption using ChaCha20-Poly1305
+//! Authenticated encryption using XChaCha20-Poly1305
+//!
+//! Why XChaCha20 over regular ChaCha20?
+//! - 24-byte nonce (vs 12) - safe for random nonce generation
+//! - No birthday bound issues until ~2^96 messages
 //!
 //! Why ChaCha20 over AES?
 //! - Faster on systems without AES-NI (mobile, older hardware)
@@ -7,7 +11,7 @@
 
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    ChaCha20Poly1305, Nonce,
+    XChaCha20Poly1305, XNonce,
 };
 use thiserror::Error;
 
@@ -23,14 +27,14 @@ pub enum EncryptionError {
     InvalidFormat,
 }
 
-/// Encrypt data with ChaCha20-Poly1305
+/// Encrypt data with XChaCha20-Poly1305
 ///
-/// Output format: nonce (12 bytes) || ciphertext || tag (16 bytes)
+/// Output format: nonce (24 bytes) || ciphertext || tag (16 bytes)
 pub fn encrypt(key: &ChunkKey, plaintext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
-    let cipher = ChaCha20Poly1305::new(key.as_bytes().into());
+    let cipher = XChaCha20Poly1305::new(key.as_bytes().into());
 
-    // Generate random nonce
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    // Generate random 24-byte nonce (safe for random generation)
+    let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
 
     // Encrypt with authentication
     let ciphertext = cipher
@@ -38,24 +42,25 @@ pub fn encrypt(key: &ChunkKey, plaintext: &[u8]) -> Result<Vec<u8>, EncryptionEr
         .map_err(|_| EncryptionError::EncryptionFailed)?;
 
     // Prepend nonce to ciphertext
-    let mut result = Vec::with_capacity(12 + ciphertext.len());
+    let mut result = Vec::with_capacity(24 + ciphertext.len());
     result.extend_from_slice(&nonce);
     result.extend_from_slice(&ciphertext);
 
     Ok(result)
 }
 
-/// Decrypt data with ChaCha20-Poly1305
+/// Decrypt data with XChaCha20-Poly1305
 pub fn decrypt(key: &ChunkKey, ciphertext: &[u8]) -> Result<Vec<u8>, EncryptionError> {
-    if ciphertext.len() < 12 + 16 {
+    // 24 bytes nonce + 16 bytes tag minimum
+    if ciphertext.len() < 24 + 16 {
         return Err(EncryptionError::InvalidFormat);
     }
 
-    let cipher = ChaCha20Poly1305::new(key.as_bytes().into());
+    let cipher = XChaCha20Poly1305::new(key.as_bytes().into());
 
-    // Extract nonce and ciphertext
-    let nonce = Nonce::from_slice(&ciphertext[..12]);
-    let encrypted = &ciphertext[12..];
+    // Extract 24-byte nonce and ciphertext
+    let nonce = XNonce::from_slice(&ciphertext[..24]);
+    let encrypted = &ciphertext[24..];
 
     // Decrypt and verify
     cipher
